@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { TelegramService } from "../../../../lib/telegram";
 
@@ -12,7 +11,7 @@ export default async function handler(
 ) {
   try {
     const body = await req.body;
-    const { chatId, command, params } = body;
+    const { chatId, command } = body;
 
     // Validate required fields
     if (!chatId || !command) {

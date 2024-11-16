@@ -1,11 +1,7 @@
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
-import {
-  DynamicContextProvider,
-  DynamicWidget,
-} from "@dynamic-labs/sdk-react-core";
+import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
-import { useCallback, useEffect } from "react";
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 

@@ -2,14 +2,7 @@ import Image from "next/image";
 // import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useCallback, useEffect, useState } from "react";
-import { ethers } from "ethers";
 import { USDCTransfer } from "@/utils/usdc";
-
-const USDC_CONTRACT_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // Base Sepolia USDC
-const USDC_ABI = [
-  "function transfer(address to, uint256 amount) returns (bool)",
-  "function approve(address spender, uint256 amount) returns (bool)",
-];
 
 const BookingTestData = {
   data: {
@@ -90,12 +83,10 @@ const BookMe: React.FC<BookMeProps> = ({ chatId }) => {
       }
   >();
 
-  const [toAddress, setToAddress] = useState("");
-  const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<
     "init" | "idle" | "loading" | "success" | "error"
   >("idle");
-  const [txHash, setTxHash] = useState("");
+  const [, setTxHash] = useState("");
 
   const fundWallet = useCallback(async () => {
     console.log("test fund");
