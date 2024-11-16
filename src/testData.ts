@@ -19,7 +19,7 @@ const initialPayloadToIntentAgent = {
 const intitialReturnPayloadFromIntentAgent = {
   data: {
     chatId: "-4555870136",
-    completedData: true,
+    completedData: true || false,
     response: "We need x more data" || {
       requestData: {
         location: "Chiang Mai",

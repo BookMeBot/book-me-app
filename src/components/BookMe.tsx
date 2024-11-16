@@ -132,15 +132,26 @@ const BookMe: React.FC<BookMeProps> = ({ chatId }) => {
     !loggedIn ? setShowAuthFlow(true) : fundWallet();
   }, [setShowAuthFlow]);
 
-  console.log({ authToken, primaryWallet, status });
+  console.log({ authToken, primaryWallet, status, requestData });
 
-  const getChatData = useCallback(() => {
-    //fetch data from backend bot
+  const getChatData = useCallback(async () => {
+    const url = `/api/redis?chatId=${chatId}`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    console.log({ response });
+    const data = await response.json();
+    setRequestData(data.data?.requestData);
   }, [chatId]);
 
   useEffect(() => {
-    setRequestData(BookingTestData.data.requestData);
-  }, [BookingTestData]);
+    if (chatId) getChatData();
+  }, [chatId]);
 
   return (
     <div
@@ -193,11 +204,13 @@ const BookMe: React.FC<BookMeProps> = ({ chatId }) => {
       ) : (
         <>
           <p style={{ color: "#000" }}>
-            {`Fund "${
-              requestData?.location
-            }" travel with your share of $${requestData?.budgetPerPerson?.toFixed(
-              2
-            )}`}
+            {!requestData
+              ? ``
+              : `Fund "${
+                  requestData?.location
+                }" travel with your share of $${requestData?.budgetPerPerson?.toFixed(
+                  2
+                )}`}
           </p>
           <button
             style={{
