@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "bot": "ts-node src/pages/bot/bot.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@dynamic-labs/ethereum": "^3.6.3",
