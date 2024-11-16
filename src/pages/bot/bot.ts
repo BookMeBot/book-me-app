@@ -1,26 +1,10 @@
 const { Telegraf } = require("telegraf");
 const { ethers } = require("ethers");
-require("dotenv").config();
+const dotenv = require("dotenv");
 const axios = require("axios");
+const { createClient } = require("redis");
 
-// async function test() {
-//   // Load client with specific private key
-//   const principal = Signer.parse(process.env.STORACHA_PRIVATE_KEY);
-//   const store = new StoreMemory();
-//   const client = await Client.create({ principal, store });
-//   // Add proof that this agent has been delegated capabilities on the space
-//   const proof = await Proof.parse(process.env.STORACHA_PROOF);
-//   const space = await client.addSpace(proof);
-//   await client.setCurrentSpace(space.did());
-//   //use upload directory since it will maintain the file name
-
-//   // w3s.link/ipfs/-4555870136/1.0.0.json
-//   // w3s.link/ipfs/-4555870136/2.0.0.json
-
-//   // w3s.link/ipfs/asdhashdlakwsjfklasf/-4555870136.json
-
-//   // READY to go!
-// }
+dotenv.config();
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const NILLION_USER_ID = process.env.NILLION_USER_ID;
@@ -31,6 +15,16 @@ if (!BOT_TOKEN || !NILLION_USER_ID) {
 }
 
 const bot = new Telegraf(BOT_TOKEN);
+
+const client = createClient({
+  password: process.env.REDIS_PASSWORD,
+  socket: {
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT ?? 13744),
+  },
+});
+
+client.on("error", (err: any) => console.log("Redis Client Error", err));
 
 let totalMembers = 0;
 const agreedUsers = new Set();
@@ -184,26 +178,69 @@ async function createWalletForChat(chatId: string) {
   return wallet.address;
 }
 
+// First, let's define an interface for our chat data structure
+interface ChatData {
+  chatId: string;
+  walletAddress?: string;
+  nillionId?: string;
+  completedData?: boolean;
+  requestData?: {
+    location?: string;
+    startDate?: number;
+    endDate?: number;
+    numberOfGuests?: number;
+    numberOfRooms?: number;
+    features?: string[];
+    budgetPerPerson?: number;
+    currency?: string;
+  };
+}
+
+// TODO: add wallet creation
 bot.start(async (ctx: any) => {
-  const chatId = ctx.chat?.id;
+  const chatId = ctx.chat?.id.toString();
   const userId = ctx.from?.id;
-  console.log(ctx.update.message);
 
-  const appId = await registerAppId();
-  console.log(appId, "appid");
-  await storePrivateKey(appId, NILLION_USER_ID, chatWallets[chatId].privateKey);
+  try {
+    const appId = await registerAppId();
+    console.log(appId, "appid");
 
-  // if (!chatWallets[chatId]) {
-  //   //const walletAddress = await createWalletForChat(chatId);
-  //   ctx.reply(
-  //     `A new wallet has been created for this chat:\nAddress: ${walletAddress}\nYou can send funds to this address.`
-  //   );
-  // } else {
-  // const walletAddress = chatWallets[chatId].address;
-  // ctx.reply(`This chat already has a wallet:\nAddress: ${walletAddress}`);
-  // //}
+    // Get existing data or initialize new
+    const existingDataStr = await client.get(chatId);
+    let chatData: ChatData = existingDataStr
+      ? JSON.parse(existingDataStr)
+      : { chatId };
 
-  // ctx.reply(`Welcome! Your chat ID is: ${chatId}\nYour user ID is: ${userId}`);
+    // Update with new wallet and Nillion data
+    chatData = {
+      ...chatData,
+      walletAddress: chatWallets[chatId]?.address,
+      nillionId: appId,
+    };
+
+    // Store the updated data
+    await client.set(chatId, JSON.stringify(chatData));
+
+    const existingChatIds = await client.get("all-chat-ids");
+    let chatIds = existingChatIds ? JSON.parse(existingChatIds) : [];
+
+    // Only add the chatId if it's not already in the list
+    if (!chatIds.includes(chatId)) {
+      chatIds.push(chatId);
+      await client.set("all-chat-ids", JSON.stringify(chatIds));
+    }
+
+    await storePrivateKey(
+      appId,
+      NILLION_USER_ID,
+      chatWallets[chatId].privateKey
+    );
+
+    ctx.reply(`Chat initialized with ID: ${chatId}`);
+  } catch (error) {
+    console.error("Initialization failed:", error);
+    ctx.reply("Failed to initialize chat");
+  }
 });
 
 bot.command("book", (ctx: any) => {
@@ -380,7 +417,7 @@ bot.command("wallet", (ctx: any) => {
 });
 
 // listen for messages
-bot.on("text", (ctx: any) => {
+bot.on("text", async (ctx: any) => {
   const chatId = ctx.chat.id;
   const userId = ctx.from.id;
   const messageText = ctx.message?.text;
@@ -388,8 +425,52 @@ bot.on("text", (ctx: any) => {
 
   console.log(isFromBot);
 
+  console.log(messageText);
+
   if (messageText === "funding is complete.") {
     ctx.reply(`funding complete for chat ${chatId}`);
+  }
+
+  //send data to agent backend
+  //if response has completeData = true then store the result data in redis
+  // await client.set('key', 'value');
+
+  if (messageText === "redis test") {
+    try {
+      // First, check if we have existing data
+      const chatIdString = chatId?.toString();
+      const existingDataStr = await client.get(chatIdString);
+
+      console.log({ existingDataStr });
+      let chatData: ChatData = existingDataStr
+        ? JSON.parse(existingDataStr)
+        : { chatIdString };
+
+      // Update with new data
+      chatData = {
+        ...chatData,
+        walletAddress: "0x35E38E69Ae9b11b675f2062b3D4E9FFB5ef756AC", // Your wallet address
+        nillionId:
+          "3kLFeFyiBUF3xChGUvnLrmnUHBPjwfjHfY2wpfJgj3nbY4sn4tqHATd8Zksn2w2zgspFm6eH22BvqsBPSskD4LS", // Your Nillion ID
+        completedData: true,
+        requestData: {
+          location: "Chiang Mai",
+          startDate: 0,
+          endDate: 0,
+          numberOfGuests: 4,
+          numberOfRooms: 2,
+          features: ["Wi-Fi", "swimming pool"],
+          budgetPerPerson: 0.1,
+          currency: "USD",
+        },
+      };
+
+      // Store the merged data
+      await client.set(chatIdString, JSON.stringify(chatData));
+    } catch (error) {
+      console.error("Redis operation failed:", error);
+      ctx.reply("Failed to store/retrieve data");
+    }
   }
 
   // if (messageText === "✅") {
@@ -503,10 +584,18 @@ function handleFundingComplete(chatId: any) {
   console.log(`Funding complete message sent to chat ${chatId}`);
 }
 
-// Start the bot
-bot.launch().then(() => {
-  console.log("Bot is running");
-});
+// Wrap initialization in async function
+async function initBot() {
+  await client.connect();
+
+  // Start the bot
+  bot.launch().then(() => {
+    console.log("Bot is running");
+  });
+}
+
+// Call the init function
+initBot().catch(console.error);
 
 // shutdown
 process.once("SIGINT", () => bot.stop("SIGINT"));
