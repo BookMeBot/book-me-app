@@ -48,7 +48,7 @@ const BookMe: React.FC<BookMeProps> = ({ chatId }) => {
           transition: "all 0.2s",
           marginTop: "20px",
         }}
-        onClick={handleShowAuthFlow}
+        onClick={() => setShowAuthFlow(true)}
       >
         connect
       </button>
