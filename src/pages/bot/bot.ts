@@ -10,7 +10,7 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const NILLION_USER_ID = process.env.NILLION_USER_ID;
 const NILLION_API_BASE_URL = "https://nillion-storage-apis-v0.onrender.com";
 
-if (!BOT_TOKEN) {
+if (!BOT_TOKEN || !NILLION_USER_ID) {
   throw new Error("Please define required environment variables in .env");
 }
 
@@ -165,13 +165,7 @@ bot.command("sendhistory", async (ctx: any) => {
   }
 });
 
-const chatWallets: { [chatId: string]: WalletInfo } = {
-  "-4555870136": {
-    address: "0x35E38E69Ae9b11b675f2062b3D4E9FFB5ef756AC",
-    privateKey:
-      "0x640686f5825f8805a13b361f9af392beef2fdf04540ba5221c05a6b8dbc9eab8",
-  },
-};
+const chatWallets: { [chatId: string]: WalletInfo } = {};
 
 async function createWalletForChat(chatId: string) {
   const wallet = ethers.Wallet.createRandom();
@@ -202,6 +196,7 @@ interface ChatData {
   };
 }
 
+// TODO: add wallet creation
 bot.start(async (ctx: any) => {
   const chatId = ctx.chat?.id.toString();
   const userId = ctx.from?.id;
@@ -237,7 +232,7 @@ bot.start(async (ctx: any) => {
 
     await storePrivateKey(
       appId,
-      NILLION_USER_ID || "",
+      NILLION_USER_ID,
       chatWallets[chatId].privateKey
     );
 
@@ -332,6 +327,80 @@ async function storePrivateKey(
     throw new Error("Nillion storage error");
   }
 }
+async function retrievePrivateKey(appId: string, userSeed: string) {
+  try {
+    const storeIdsResponse = await axios.get(
+      `${NILLION_API_BASE_URL}/api/apps/${appId}/store_ids`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const storeIdsData = storeIdsResponse.data;
+
+    if (
+      !storeIdsData ||
+      !storeIdsData.store_ids ||
+      storeIdsData.store_ids.length === 0
+    ) {
+      console.error("No store IDs found for the App ID:", appId);
+      return null;
+    }
+
+    const { store_id, secret_name } = storeIdsData.store_ids[0];
+
+    const secretResponse = await axios.get(
+      `${NILLION_API_BASE_URL}/api/secret/retrieve/${store_id}`,
+      {
+        params: {
+          retrieve_as_nillion_user_seed: userSeed,
+          secret_name: secret_name,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const secretData = secretResponse.data;
+
+    if (secretData && secretData.secret) {
+      console.log("Private key retrieved successfully:", secretData.secret);
+      return secretData.secret;
+    } else {
+      console.error("Failed to retrieve the secret:", secretData);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error retrieving private key from Nillion:", error);
+    return null;
+  }
+}
+
+bot.command("getkey", async (ctx: any) => {
+  const chatId = ctx.chat.id.toString();
+  const walletInfo = chatWallets[chatId];
+
+  if (!walletInfo) {
+    await ctx.reply(
+      "No wallet has been created for this chat yet. Use /start to create one."
+    );
+    return;
+  }
+
+  const privateKey = await retrievePrivateKey(
+    "e0925412-cd66-49c1-9709-727d9264ce60",
+    NILLION_USER_ID
+  );
+
+  if (privateKey) {
+    await ctx.reply(`The private key for this chat is:\n${privateKey}`);
+  } else {
+    await ctx.reply("Failed to retrieve the private key.");
+  }
+});
 
 bot.command("wallet", (ctx: any) => {
   const chatId = ctx.chat.id;
@@ -347,30 +416,7 @@ bot.command("wallet", (ctx: any) => {
   }
 });
 
-bot.command("checkfunds", async (ctx: any) => {
-  const chatId = ctx.chat.id;
-  const walletInfo = chatWallets[chatId];
-
-  if (!walletInfo) {
-    ctx.reply(
-      "No wallet has been created for this chat yet. Use /start to create one."
-    );
-    return;
-  }
-
-  // Connect to the Ethereum network
-  const provider = new ethers.JsonRpcProvider(
-    `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`
-  );
-  const balance = await provider.getBalance(walletInfo.address);
-  const balanceInEth = ethers.formatEther(balance);
-
-  if (balanceInEth === "0") ctx.reply("No funds");
-
-  ctx.reply(`The current balance of the wallet is: ${balanceInEth} ETH`);
-});
-
-// Listen for emoji responses (✅)
+// listen for messages
 bot.on("text", async (ctx: any) => {
   const chatId = ctx.chat.id;
   const userId = ctx.from.id;
