@@ -21,8 +21,33 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   }, []);
 
+  const triggerCommand = async (
+    chatId: string,
+    command: string,
+    params?: string
+  ) => {
+    const url = "http://localhost:3000/api/telegram/funded";
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chatId,
+        command,
+        params,
+      }),
+    });
+
+    console.log({ response });
+
+    return response.json();
+  };
+
   useEffect(() => {
     const init = async () => {
+      // await triggerCommand("-4555870136", "hello");
       if (!isInitialized) {
         try {
           await initializeServer();

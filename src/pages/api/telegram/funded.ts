@@ -23,7 +23,7 @@ export default async function handler(
     }
 
     // Send command to Telegram
-    const result = await telegramService.sendCommand(chatId, command, params);
+    const result = await telegramService.sendCommand(chatId, command);
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {

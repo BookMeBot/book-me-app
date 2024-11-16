@@ -7,8 +7,6 @@ export class TelegramService {
 
   async sendCommand(chatId: string, command: string, params?: string) {
     try {
-      const fullCommand = params ? `/${command} ${params}` : `/${command}`;
-
       const response = await fetch(`${this.baseUrl}/sendMessage`, {
         method: "POST",
         headers: {
@@ -16,7 +14,7 @@ export class TelegramService {
         },
         body: JSON.stringify({
           chat_id: chatId,
-          text: "funding is complete.",
+          text: command,
         }),
       });
 
