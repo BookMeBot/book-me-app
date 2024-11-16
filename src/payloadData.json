@@ -1,0 +1,15 @@
+{
+  "data": {
+    "chatId": "-4555870136",
+    "requestData": {
+      "location": "Chiang Mai",
+      "startDate": 0,
+      "endDate": 0,
+      "numberOfGuests": 4,
+      "numberOfRooms": 2,
+      "features": ["Wi-Fi", "swimming pool"],
+      "budgetPerPerson": 200,
+      "currency": "USD"
+    }
+  }
+}

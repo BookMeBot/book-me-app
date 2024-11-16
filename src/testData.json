@@ -1,0 +1,17 @@
+{
+  "data": {
+    "chatId": "-4555870136",
+    "botWalletAddress": "0xe8E5e7BFB725Ef08B0495299fBD2CE4e296C6f3d",
+    "nillionAppId": "exampleId",
+    "requestData": {
+      "location": "Chiang Mai",
+      "startDate": 0,
+      "endDate": 0,
+      "numberOfGuests": 4,
+      "numberOfRooms": 2,
+      "features": ["Wi-Fi", "swimming pool"],
+      "budgetPerPerson": 200,
+      "currency": "USD"
+    }
+  }
+}
