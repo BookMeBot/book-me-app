@@ -414,7 +414,7 @@ bot.on("text", async (ctx: any) => {
           numberOfGuests: 4,
           numberOfRooms: 2,
           features: ["Wi-Fi", "swimming pool"],
-          budgetPerPerson: 200,
+          budgetPerPerson: 0.1,
           currency: "USD",
         },
       };
