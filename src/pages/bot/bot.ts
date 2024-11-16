@@ -23,6 +23,8 @@ const axios = require("axios");
 // }
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const NILLION_USER_ID = process.env.NILLION_USER_ID;
+const NILLION_API_BASE_URL = "https://nillion-storage-apis-v0.onrender.com";
 
 if (!BOT_TOKEN) {
   throw new Error("Please define required environment variables in .env");
@@ -187,6 +189,14 @@ bot.start(async (ctx: any) => {
   const userId = ctx.from?.id;
   console.log(ctx.update.message);
 
+  const appId = await registerAppId();
+  console.log(appId, "appid");
+  await storePrivateKey(
+    appId,
+    NILLION_USER_ID || "",
+    chatWallets[chatId].privateKey
+  );
+
   // if (!chatWallets[chatId]) {
   //   //const walletAddress = await createWalletForChat(chatId);
   //   ctx.reply(
@@ -226,6 +236,64 @@ bot.command("book", (ctx: any) => {
     );
   }
 });
+
+// NILLION
+async function registerAppId() {
+  try {
+    const response = await axios.post(
+      `${NILLION_API_BASE_URL}/api/apps/register`
+    );
+
+    if (response.status === 200 && response.data.app_id) {
+      const appId = response.data.app_id;
+      console.log(`Registered new App ID: ${appId}`);
+      return appId;
+    } else {
+      console.error("Failed to register App ID:", response.data);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error registering App ID:", error);
+    throw new Error("Failed to register App ID with Nillion");
+  }
+}
+
+async function storePrivateKey(
+  appId: string,
+  userSeed: string,
+  privateKey: string
+) {
+  try {
+    const response = await axios.post(
+      `${NILLION_API_BASE_URL}/api/apps/${appId}/secrets`,
+      {
+        secret: {
+          nillion_seed: userSeed,
+          secret_value: privateKey,
+          secret_name: "wallet_private_key",
+        },
+        permissions: {
+          retrieve: [],
+          update: [],
+          delete: [],
+          compute: {},
+        },
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    if (response.status === 200) {
+      console.log(`Private key stored successfully for App ID: ${appId}`);
+    } else {
+      console.error(`Failed to store private key: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error("Error storing private key in Nillion:", error);
+    throw new Error("Nillion storage error");
+  }
+}
 
 bot.command("wallet", (ctx: any) => {
   const chatId = ctx.chat.id;
