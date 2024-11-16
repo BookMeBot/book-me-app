@@ -2,24 +2,24 @@ const { Telegraf } = require("telegraf");
 const { ethers } = require("ethers");
 require("dotenv").config();
 
-async function test() {
-  // Load client with specific private key
-  const principal = Signer.parse(process.env.STORACHA_PRIVATE_KEY);
-  const store = new StoreMemory();
-  const client = await Client.create({ principal, store });
-  // Add proof that this agent has been delegated capabilities on the space
-  const proof = await Proof.parse(process.env.STORACHA_PROOF);
-  const space = await client.addSpace(proof);
-  await client.setCurrentSpace(space.did());
-  //use upload directory since it will maintain the file name
+// async function test() {
+//   // Load client with specific private key
+//   const principal = Signer.parse(process.env.STORACHA_PRIVATE_KEY);
+//   const store = new StoreMemory();
+//   const client = await Client.create({ principal, store });
+//   // Add proof that this agent has been delegated capabilities on the space
+//   const proof = await Proof.parse(process.env.STORACHA_PROOF);
+//   const space = await client.addSpace(proof);
+//   await client.setCurrentSpace(space.did());
+//   //use upload directory since it will maintain the file name
 
-  // w3s.link/ipfs/-4555870136/1.0.0.json
-  // w3s.link/ipfs/-4555870136/2.0.0.json
+//   // w3s.link/ipfs/-4555870136/1.0.0.json
+//   // w3s.link/ipfs/-4555870136/2.0.0.json
 
-  // w3s.link/ipfs/asdhashdlakwsjfklasf/-4555870136.json
+//   // w3s.link/ipfs/asdhashdlakwsjfklasf/-4555870136.json
 
-  // READY to go!
-}
+//   // READY to go!
+// }
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
