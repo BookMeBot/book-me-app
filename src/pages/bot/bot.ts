@@ -226,6 +226,15 @@ bot.start(async (ctx: any) => {
     // Store the updated data
     await client.set(chatId, JSON.stringify(chatData));
 
+    const existingChatIds = await client.get("all-chat-ids");
+    let chatIds = existingChatIds ? JSON.parse(existingChatIds) : [];
+
+    // Only add the chatId if it's not already in the list
+    if (!chatIds.includes(chatId)) {
+      chatIds.push(chatId);
+      await client.set("all-chat-ids", JSON.stringify(chatIds));
+    }
+
     await storePrivateKey(
       appId,
       NILLION_USER_ID || "",
